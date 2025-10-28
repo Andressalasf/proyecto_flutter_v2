@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class ProductsScreen extends StatelessWidget {
+  static const String name = "product_screen";
   const ProductsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+   
     return Scaffold(
       body: Center(
         child: FilledButton(onPressed: (){
