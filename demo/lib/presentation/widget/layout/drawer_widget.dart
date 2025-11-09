@@ -12,7 +12,7 @@ class DrawerWidget extends StatelessWidget {
     return Drawer(
       child: Column(
         children: [
-          DrawerHeader(child: Text("Hola header")),
+          DrawerHeader(child: Text("Contenido")),
           ...routerConfig.map((e) => ListTile(
 
              title: Text(e.tittle),
