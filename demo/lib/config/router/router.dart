@@ -26,7 +26,7 @@ final routerConfig = <RouterModel> [
     name: ListProducts.name,
     description: "Listar productos",
     patch: "/list_products",
-    icon: Icons.production_quantity_limits_outlined,
+    icon: Icons.list,
     screen: (context, state) => const ListProducts(),
     isVisible: true,
     tittle: "List Products"),

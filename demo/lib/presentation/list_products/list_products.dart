@@ -29,19 +29,12 @@ class _ListProductsState extends State<ListProducts> {
     });
 
     try {
-      final result = await _apiService.getProducts();
+      final products = await _apiService.getProducts();
       
       setState(() {
+        _products = products;
         _isLoading = false;
       });
-
-      if (result.isSuccess && result.data != null) {
-        setState(() {
-          _products = result.data!;
-        });
-      } else {
-        _showError(result.error ?? 'Error al cargar productos');
-      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -52,57 +45,34 @@ class _ListProductsState extends State<ListProducts> {
 
   // Mostrar error
   void _showError(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error', style: TextStyle(color: Colors.red)),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Aceptar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _loadProducts();
-            },
-            child: const Text('Reintentar'),
+    ScaffoldMessenger.of(context).clearSnackBars();
+    final snack = SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.red,
+      margin: const EdgeInsets.fromLTRB(15.0, 0.0, 15.0, 20.0),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+      ),
+      content: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.white),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  // Mostrar detalles
-  void _showDetails(Product product) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(product.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('ID: ${product.id ?? 'N/A'}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text('Product ID: ${product.productId ?? 'N/A'}'),
-            const SizedBox(height: 5),
-            Text('Precio: \$${product.unitPrice}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-            Text('Stock: ${product.stock} unidades', style: const TextStyle(color: Colors.blue)),
-            Text('Tipo: ${product.productType}'),
-            const SizedBox(height: 10),
-            const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(product.description),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-        ],
+      duration: const Duration(seconds: 4),
+      action: SnackBarAction(
+        label: 'Reintentar',
+        textColor: Colors.white,
+        onPressed: _loadProducts,
       ),
     );
+    ScaffoldMessenger.of(context).showSnackBar(snack);
   }
 
   @override
@@ -169,8 +139,6 @@ class _ListProductsState extends State<ListProducts> {
                             ),
                           ],
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        onTap: () => _showDetails(product),
                       ),
                     );
                   },

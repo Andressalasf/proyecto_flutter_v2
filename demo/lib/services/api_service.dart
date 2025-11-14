@@ -2,105 +2,91 @@ import 'package:dio/dio.dart';
 import '../models/product_model.dart';
 
 class ApiService {
-  final Dio _dio;
-  
-  static const String baseUrl = 'http://localhost:8080';
-  
-  ApiService() : _dio = Dio(BaseOptions(
-    baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    validateStatus: (status) => status! < 500,
-  )) {
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-    ));
-  }
+  final String url = 'http://localhost:8080';
+  final Dio _dio = Dio();
 
   // Crear un producto
-  Future<ApiResponse<Product>> createProduct(Product product) async {
+  Future<String> createProduct(Product product) async {
     try {
+      _dio.options.connectTimeout = const Duration(seconds: 10);
+      _dio.options.receiveTimeout = const Duration(seconds: 10);
+
       final response = await _dio.post(
-        '/products',
+        '$url/products',
         data: product.toJson(),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final createdProduct = Product.fromJson(response.data);
-        return ApiResponse.success(createdProduct);
+        return 'Producto creado exitosamente';
       } else {
-        return ApiResponse.error(
-          'Error al crear el producto. Código: ${response.statusCode}',
-        );
+        return 'Error del servidor: ${response.statusCode}';
       }
     } on DioException catch (e) {
-      return ApiResponse.error(_handleDioError(e));
+      // Error de id del producto duplicado
+      if (e.response?.statusCode == 400 || e.response?.statusCode == 409 || e.response?.statusCode == 500) {
+        final responseData = e.response?.data?.toString() ?? '';
+        if (responseData.contains('product_id') || 
+            responseData.contains('productId') || 
+            responseData.contains('Duplicate') || 
+            responseData.contains('duplicate')) {
+          return 'El Product ID ya existe. Usa un ID diferente.';
+        }
+      }
+
+      // Otros errores
+      if (e.type == DioExceptionType.connectionTimeout) {
+        return 'Tiempo de conexión agotado. Verifica tu conexión a internet.';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        return 'El servidor tardó demasiado en responder.';
+      } else if (e.type == DioExceptionType.connectionError) {
+        return 'Error de conexión. Verifica tu internet y la URL del servidor.';
+      } else if (e.response?.statusCode == 404) {
+        return 'Servidor no encontrado. Verifica la URL.';
+      } else if (e.response?.statusCode == 500) {
+        return 'Error interno del servidor. Intenta más tarde.';
+      } else {
+        return e.message ?? 'Error inesperado';
+      }
     } catch (e) {
-      return ApiResponse.error('Error inesperado: ${e.toString()}');
+      return 'Error inesperado: $e';
     }
   }
 
   // Obtener todos los productos
-  Future<ApiResponse<List<Product>>> getProducts({int limit = 50}) async {
+  Future<List<Product>> getProducts() async {
     try {
-      final response = await _dio.get('/products');
+      _dio.options.connectTimeout = const Duration(seconds: 10);
+      _dio.options.receiveTimeout = const Duration(seconds: 10);
+
+      final response = await _dio.get('$url/products');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        final products = data.map((json) => Product.fromJson(json)).toList();
-        return ApiResponse.success(products);
+
+        if (data.isEmpty) {
+          throw Exception('No hay productos registrados');
+        }
+
+        return data.map((json) => Product.fromJson(json)).toList();
       } else {
-        return ApiResponse.error(
-          'Error al obtener productos. Código: ${response.statusCode}',
-        );
+        throw Exception('Error del servidor: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      return ApiResponse.error(_handleDioError(e));
+      if (e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('Tiempo de conexión agotado. Verifica tu internet.');
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('El servidor tardó demasiado en responder.');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('Error de conexión. Verifica tu internet y la URL.');
+      } else if (e.response?.statusCode == 404) {
+        throw Exception('Servidor no encontrado. Verifica la URL.');
+      } else if (e.response?.statusCode == 500) {
+        throw Exception('Error interno del servidor. Intenta más tarde.');
+      } else {
+        throw Exception('Error de red: ${e.message}');
+      }
     } catch (e) {
-      return ApiResponse.error('Error inesperado: ${e.toString()}');
+      throw Exception('Error inesperado: $e');
     }
-  }
-
-  // Manejo de errores de Dio
-  String _handleDioError(DioException error) {
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-        return 'Error: Tiempo de conexión agotado. Verifica tu conexión a internet.';
-      case DioExceptionType.sendTimeout:
-        return 'Error: Tiempo de envío agotado. Intenta nuevamente.';
-      case DioExceptionType.receiveTimeout:
-        return 'Error: Tiempo de recepción agotado. El servidor no responde.';
-      case DioExceptionType.badResponse:
-        return 'Error del servidor: ${error.response?.statusCode}. ${error.response?.statusMessage ?? "Sin mensaje"}';
-      case DioExceptionType.cancel:
-        return 'Error: La petición fue cancelada.';
-      case DioExceptionType.connectionError:
-        return 'Error de conexión: No se pudo conectar al servidor. Verifica la URL y tu conexión a internet.';
-      case DioExceptionType.badCertificate:
-        return 'Error: Certificado SSL inválido.';
-      case DioExceptionType.unknown:
-        if (error.message?.contains('SocketException') ?? false) {
-          return 'Error: No hay conexión a internet o la URL no existe.';
-        }
-        return 'Error desconocido: ${error.message ?? "Sin detalles"}';
-    }
-  }
-}
-
-// Clase para manejar respuestas de la API
-class ApiResponse<T> {
-  final T? data;
-  final String? error;
-  final bool isSuccess;
-
-  ApiResponse._({this.data, this.error, required this.isSuccess});
-
-  factory ApiResponse.success(T data) {
-    return ApiResponse._(data: data, isSuccess: true);
-  }
-
-  factory ApiResponse.error(String error) {
-    return ApiResponse._(error: error, isSuccess: false);
   }
 }
