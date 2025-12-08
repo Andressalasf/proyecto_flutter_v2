@@ -1,6 +1,7 @@
 import 'package:demo/presentation/widget/layout/drawer_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../models/product_model.dart';
 import '../../services/api_service.dart';
 
@@ -81,12 +82,32 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   void dispose() {
+    _unitPriceController.removeListener(_onPriceChanged);
     _productIdController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     _unitPriceController.dispose();
     _stockController.dispose();
     super.dispose();
+  }
+
+  _onPriceChanged() {
+    if (_isEditing) return;
+
+    _isEditing = true;
+
+    String texto = _unitPriceController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (texto.isEmpty) {
+      _unitPriceController.text = '';
+    } else {
+      final numero = int.parse(texto);
+      _unitPriceController.text = _formatter.format(numero);
+      _unitPriceController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _unitPriceController.text.length),
+      );
+    }
+
+    _isEditing = false;
   }
 
   // Validar ID del producto (PROD-00000)
@@ -156,12 +177,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return null;
   }
 
-  // Validar precio unitario (decimal, máximo 100 millones)
+  // Validar precio unitario
   String? _validateUnitPrice(String? value) {
     if (value == null || value.isEmpty) {
       return 'El precio es requerido';
     }
-    final price = double.tryParse(value);
+    String precioLimpio = value.replaceAll(RegExp(r'[^0-9]'), '');
+    final price = int.tryParse(precioLimpio);
     if (price == null) {
       return 'Ingrese un precio válido';
     }
@@ -174,15 +196,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return null;
   }
 
-  // Validar descripción (opcional, máximo 255 caracteres)
-  String? _validateDescription(String? value) {
-    if (value != null && value.length > 255) {
-      return 'Máximo 255 caracteres';
-    }
-    return null;
-  }
-
-  // Validar stock (máximo 100000)
+  // Validar stock
   String? _validateStock(String? value) {
     if (value == null || value.isEmpty) {
       return 'El stock es requerido';
@@ -224,7 +238,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(snack);
   }
 
-  // Mostrar éxito con SnackBar
+  // Mostrar exito con SnackBar
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
     final snack = SnackBar(
@@ -292,23 +306,29 @@ class _ProductsScreenState extends State<ProductsScreen> {
         productType: _selectedProductType!,
       );
 
-      final result = await _apiService.createProduct(product);
+    final product = Product(
+      productId: _productIdController.text,
+      name: _nameController.text,
+      description: _descriptionController.text.isEmpty 
+          ? '' 
+          : _descriptionController.text,
+      unitPrice: int.parse(precioLimpio),
+      stock: int.parse(_stockController.text),
+      productType: _selectedProductType!,
+    );
 
-      setState(() {
-        _isLoading = false;
-      });
+    final result = await _apiService.createProduct(product);
 
-      if (result.isSuccess && result.data != null) {
-        _showSuccess('Producto creado exitosamente!\nID: ${result.data!.id}');
-        _clearForm();
-      } else {
-        _showError(result.error ?? 'No se pudo crear el producto');
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showError(e.toString());
+    setState(() {
+      _isLoading = false;
+      
+    });
+
+    if (result == 'Producto creado exitosamente') {
+      _showSuccess(result);
+      _clearForm();
+    } else {
+      _showError(result);
     }
   }
 
@@ -332,7 +352,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // ID del Producto
+                    // Id del Producto
                     TextFormField(
                       controller: _productIdController,
                       decoration: const InputDecoration(
@@ -424,7 +444,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       maxLines: 3,
                       maxLength: 255,
-                      validator: _validateDescription,
                     ),
                     const SizedBox(height: 15),
 
