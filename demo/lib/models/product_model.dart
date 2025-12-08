@@ -50,9 +50,13 @@ class Product {
       if (id != null) 'id': id,
       'title': title,
       'price': price,
-      'description': description,
-      'category_id': categoryId,
-      'images': images ?? [],
+      'description': description ?? 'Sin descripción',
+      'categoryId': categoryId ?? 40,
+      'images': (images != null && images!.isNotEmpty)
+          ? images
+          : [
+              'https://picsum.photos/640/640?r=${DateTime.now().millisecondsSinceEpoch}',
+            ],
     };
   }
 }

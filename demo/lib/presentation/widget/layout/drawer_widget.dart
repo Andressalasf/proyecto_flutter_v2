@@ -56,6 +56,14 @@ class DrawerWidget extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
+                ListTile(
+                  title: const Text('Perfil'),
+                  leading: const Icon(Icons.person),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/profile');
+                  },
+                ),
                 ...routerConfig.map(
                   (e) => ListTile(
                     title: Text(e.tittle),

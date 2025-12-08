@@ -162,10 +162,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
         title: _titleController.text,
         price: double.parse(_priceController.text),
         description: _descriptionController.text.isEmpty
-            ? null
+            ? 'Sin descripción'
             : _descriptionController.text,
-        categoryId: _selectedCategoryId,
-        images: _images.isEmpty ? null : _images,
+        categoryId: _selectedCategoryId ?? 40,
+        images: _images.isEmpty
+            ? [
+                'https://picsum.photos/640/640?r=${DateTime.now().millisecondsSinceEpoch}',
+              ]
+            : _images,
       );
 
       final result = await _apiService.createProduct(product);

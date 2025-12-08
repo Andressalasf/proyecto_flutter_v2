@@ -1,11 +1,13 @@
+import 'package:demo/helper/interceptor.dart';
 import 'package:dio/dio.dart';
 import '../models/product_model.dart';
 
 class ApiService {
-  // Si usas Chrome Web: http://localhost:3000
-  // Si usas emulador/dispositivo: http://192.168.1.4:3000
-  final String url = 'http://localhost:3000/api/v1';
-  final Dio _dio = Dio();
+  // API pública de prueba - Platzi Fake Store API
+  // Para usar tu servidor local: 'http://localhost:3000/api/v1'
+  // Si usas emulador/dispositivo: 'http://192.168.1.4:3000/api/v1'
+  final String url = 'https://api.escuelajs.co/api/v1';
+  final Dio _dio = Dio()..interceptors.add(AuthInterceptor());
 
   // Crear un producto
   Future<String> createProduct(Product product) async {
