@@ -5,6 +5,45 @@ import 'package:intl/intl.dart';
 import '../../models/product_model.dart';
 import '../../services/api_service.dart';
 
+// Formatter to keep a fixed, non-deletable prefix at the start of the field.
+class PrefixTextInputFormatter extends TextInputFormatter {
+  final String prefix;
+  PrefixTextInputFormatter(this.prefix);
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // If new text is shorter than prefix, restore prefix
+    if (newValue.text.length < prefix.length) {
+      return TextEditingValue(
+        text: prefix,
+        selection: TextSelection.collapsed(offset: prefix.length),
+      );
+    }
+
+    String text = newValue.text;
+
+    // If user removed/modified the prefix, reinsert it at the start.
+    if (!text.startsWith(prefix)) {
+      // Remove any occurrences of the prefix elsewhere and prepend it
+      final rest = text.replaceAll(prefix, '');
+      text = prefix + rest;
+    }
+
+    // Ensure the cursor/selection is not placed inside the prefix
+    int selectionIndex = newValue.selection.end;
+    if (selectionIndex < prefix.length) selectionIndex = prefix.length;
+    if (selectionIndex > text.length) selectionIndex = text.length;
+
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: selectionIndex),
+    );
+  }
+}
+
 class ProductsScreen extends StatefulWidget {
   static const String name = "product_screen";
   const ProductsScreen({super.key});
@@ -16,30 +55,29 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
-  
+
   // Controladores
   final _productIdController = TextEditingController();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _unitPriceController = TextEditingController();
   final _stockController = TextEditingController();
-  
-  String? _selectedProductType;
-  
-  bool _isLoading = false;
-  bool _isEditing = false;
 
-  final NumberFormat _formatter = NumberFormat.currency(
-    locale: 'es_CO',
-    symbol: '\$',
-    decimalDigits: 0,
-    customPattern: '\u00A4#,##0',
-  );
+  String? _selectedProductType;
+
+  bool _isLoading = false;
+  bool _isProductIdTaken = false;
+
+  static const _productPrefix = 'PROD-';
 
   @override
   void initState() {
     super.initState();
-    _unitPriceController.addListener(_onPriceChanged);
+    // Initialize product ID with prefix and place cursor at the end
+    _productIdController.text = _productPrefix;
+    _productIdController.selection = TextSelection.collapsed(
+      offset: _productPrefix.length,
+    );
   }
 
   @override
@@ -89,6 +127,40 @@ class _ProductsScreenState extends State<ProductsScreen> {
       return 'Después de PROD- debe haber números';
     }
     return null;
+  }
+
+  // Comprueba si el productId ya existe en el servidor
+  Future<bool> _checkProductIdExists(String id) async {
+    try {
+      final resp = await _apiService.getProducts();
+      if (!resp.isSuccess || resp.data == null) return false;
+      return resp.data!.any((p) => (p.productId ?? '') == id);
+    } catch (_) {
+      // En caso de error, no bloqueamos el flujo; retornamos false para permitir guardar
+      return false;
+    }
+  }
+
+  // Validación asíncrona invocada al terminar de editar el campo
+  Future<void> _validateUniqueProductId() async {
+    final id = _productIdController.text;
+    // Solo verificar si cumple el formato mínimo
+    if (id.isEmpty || !id.startsWith(_productPrefix)) return;
+    final exists = await _checkProductIdExists(id);
+    if (exists) {
+      setState(() {
+        _isProductIdTaken = true;
+      });
+      _showError(
+        'ID del producto ya utilizado, por favor escribir uno diferente',
+      );
+    } else {
+      if (_isProductIdTaken) {
+        setState(() {
+          _isProductIdTaken = false;
+        });
+      }
+    }
   }
 
   // Validar nombre
@@ -157,10 +229,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           const Icon(Icons.error_outline, color: Colors.white),
           const SizedBox(width: 15),
           Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(color: Colors.white),
-            ),
+            child: Text(message, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -184,10 +253,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           const Icon(Icons.check_circle_outline, color: Colors.white),
           const SizedBox(width: 15),
           Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(color: Colors.white),
-            ),
+            child: Text(message, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -198,7 +264,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   // Limpiar formulario
   void _clearForm() {
-    _productIdController.clear();
+    _formKey.currentState?.reset();
+    // Keep the prefix in the product ID field
+    _productIdController.text = _productPrefix;
+    _productIdController.selection = TextSelection.collapsed(
+      offset: _productPrefix.length,
+    );
     _nameController.clear();
     _descriptionController.clear();
     _unitPriceController.clear();
@@ -223,7 +294,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
       _isLoading = true;
     });
 
-    String precioLimpio = _unitPriceController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    try {
+      final product = Product(
+        productId: _productIdController.text,
+        name: _nameController.text,
+        description: _descriptionController.text.isEmpty
+            ? ''
+            : _descriptionController.text,
+        unitPrice: int.parse(_unitPriceController.text),
+        stock: int.parse(_stockController.text),
+        productType: _selectedProductType!,
+      );
 
     final product = Product(
       productId: _productIdController.text,
@@ -255,15 +336,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crear Producto', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Crear Producto',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.indigo,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       drawer: DrawerWidget(),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -279,10 +361,29 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.tag),
                       ),
+                      inputFormatters: [
+                        PrefixTextInputFormatter(_productPrefix),
+                        // Allow letters, numbers and dash after prefix (validation enforces numbers)
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[A-Za-z0-9\-]'),
+                        ),
+                      ],
+                      onTap: () {
+                        // If user taps before the prefix, move caret to the end of prefix
+                        final sel = _productIdController.selection;
+                        if (sel.start < _productPrefix.length) {
+                          _productIdController.selection =
+                              TextSelection.collapsed(
+                                offset: _productPrefix.length,
+                              );
+                        }
+                      },
+                      onFieldSubmitted: (_) => _validateUniqueProductId(),
+                      onEditingComplete: () => _validateUniqueProductId(),
                       validator: _validateProductId,
                     ),
                     const SizedBox(height: 15),
-                    
+
                     // Nombre
                     TextFormField(
                       controller: _nameController,
@@ -295,8 +396,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       validator: _validateName,
                     ),
                     const SizedBox(height: 15),
-                    
-                    // Precio Unitario
+
+                    // Precio Unitario (decimal)
                     TextFormField(
                       controller: _unitPriceController,
                       decoration: const InputDecoration(
@@ -305,11 +406,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.attach_money),
                       ),
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d+\.?\d{0,2}'),
+                        ),
+                      ],
                       validator: _validateUnitPrice,
                     ),
                     const SizedBox(height: 15),
-                    
+
                     // Stock
                     TextFormField(
                       controller: _stockController,
@@ -320,13 +428,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         prefixIcon: Icon(Icons.storage),
                       ),
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       validator: _validateStock,
                     ),
                     const SizedBox(height: 15),
-                    
+
                     // Descripción (opcional)
                     TextFormField(
                       controller: _descriptionController,
@@ -340,7 +446,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       maxLength: 255,
                     ),
                     const SizedBox(height: 15),
-                    
+
                     // Tipo de Producto (Dropdown)
                     DropdownButtonFormField<String>(
                       value: _selectedProductType,
@@ -350,11 +456,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         prefixIcon: Icon(Icons.category),
                       ),
                       items: [
-                        DropdownMenuItem(value: "Medicamento", child: Text("Medicamento")),
-                        DropdownMenuItem(value: "Agroinsumo", child: Text("Agroinsumo")),
-                        DropdownMenuItem(value: "Alimento", child: Text("Alimento")),
-                        DropdownMenuItem(value: "Herramienta", child: Text("Herramienta")),
-                        DropdownMenuItem(value: "Mantenimiento", child: Text("Mantenimiento")),
+                        DropdownMenuItem(
+                          value: "Medicamento",
+                          child: Text("Medicamento"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Agroinsumo",
+                          child: Text("Agroinsumo"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Alimento",
+                          child: Text("Alimento"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Herramienta",
+                          child: Text("Herramienta"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Mantenimiento",
+                          child: Text("Mantenimiento"),
+                        ),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -369,7 +490,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       },
                     ),
                     const SizedBox(height: 30),
-                    
+
                     // Botones
                     Row(
                       children: [
