@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 import '../models/product_model.dart';
 
 class ApiService {
-  final String url = 'http://localhost:8080';
+  // Si usas Chrome Web: http://localhost:3000
+  // Si usas emulador/dispositivo: http://192.168.1.4:3000
+  final String url = 'http://localhost:3000/api/v1';
   final Dio _dio = Dio();
 
   // Crear un producto
@@ -11,10 +13,7 @@ class ApiService {
       _dio.options.connectTimeout = const Duration(seconds: 10);
       _dio.options.receiveTimeout = const Duration(seconds: 10);
 
-      final response = await _dio.post(
-        '$url/products',
-        data: product.toJson(),
-      );
+      final response = await _dio.post('$url/products', data: product.toJson());
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         return 'Producto creado exitosamente';
@@ -22,15 +21,13 @@ class ApiService {
         return 'Error del servidor: ${response.statusCode}';
       }
     } on DioException catch (e) {
-      // Error de id del producto duplicado
-      if (e.response?.statusCode == 400 || e.response?.statusCode == 409 || e.response?.statusCode == 500) {
-        final responseData = e.response?.data?.toString() ?? '';
-        if (responseData.contains('product_id') || 
-            responseData.contains('productId') || 
-            responseData.contains('Duplicate') || 
-            responseData.contains('duplicate')) {
-          return 'El Product ID ya existe. Usa un ID diferente.';
+      // Error de validación
+      if (e.response?.statusCode == 400) {
+        final responseData = e.response?.data;
+        if (responseData is Map && responseData['message'] != null) {
+          return responseData['message'];
         }
+        return 'Datos inválidos. Verifica la información ingresada.';
       }
 
       // Otros errores

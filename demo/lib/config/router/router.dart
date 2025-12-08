@@ -1,37 +1,17 @@
 import 'package:demo/config/router/router_model.dart';
-import 'package:demo/presentation/home/home_screen.dart';
-import 'package:demo/presentation/products/products_screen.dart';
-import 'package:demo/presentation/list_products/list_products.dart';
+import 'package:demo/presentation/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 final routerConfig = <RouterModel>[
   RouterModel(
-    name: HomeScreen.name,
-    description: "Home Screen",
+    name: MainScreen.name,
+    description: "Pantalla principal",
     patch: "/",
-    icon: Icons.home_work,
-    screen: (context, state) => const HomeScreen(),
+    icon: Icons.home,
+    screen: (context, state) => const MainScreen(),
     isVisible: true,
-    tittle: "Home",
-  ),
-  RouterModel(
-    name: ProductsScreen.name,
-    description: "Crear producto",
-    patch: "/product",
-    icon: Icons.sell,
-    screen: (context, state) => const ProductsScreen(),
-    isVisible: true,
-    tittle: "Product",
-  ),
-  RouterModel(
-    name: ListProducts.name,
-    description: "Listar productos",
-    patch: "/list_products",
-    icon: Icons.list,
-    screen: (context, state) => const ListProducts(),
-    isVisible: true,
-    tittle: "List Products",
+    tittle: "Products",
   ),
 ];
 

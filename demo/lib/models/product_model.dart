@@ -1,44 +1,58 @@
 class Product {
   final int? id;
-  final String? productId;
-  final String name;
-  final String description;
-  final int unitPrice;
-  final int stock;
-  final String productType;
+  final String title;
+  final double price;
+  final String? description;
+  final int? categoryId;
+  final String? categoryName;
+  final String? categoryImage;
+  final List<String>? images;
 
   Product({
     this.id,
-    this.productId,
-    required this.name,
-    required this.description,
-    required this.unitPrice,
-    required this.stock,
-    required this.productType,
+    required this.title,
+    required this.price,
+    this.description,
+    this.categoryId,
+    this.categoryName,
+    this.categoryImage,
+    this.images,
   });
 
   // De JSON a Product
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'],
-      productId: json['productId'],
-      name: json['name'],
+      title: json['title'] ?? '',
+      price: _parsePrice(json['price']),
       description: json['description'],
-      unitPrice: json['unitPrice'],
-      stock: json['stock'],
-      productType: json['productType'],
+      categoryId: json['category_id'],
+      categoryName: json['category_name'],
+      categoryImage: json['category_image'],
+      images: json['images'] != null ? List<String>.from(json['images']) : null,
     );
+  }
+
+  // Método auxiliar para convertir el precio
+  static double _parsePrice(dynamic price) {
+    if (price == null) return 0.0;
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      return double.tryParse(price) ?? 0.0;
+    }
+    return 0.0;
   }
 
   // De Product a JSON
   Map<String, dynamic> toJson() {
     return {
-      'productId': productId,
-      'name': name,
+      if (id != null) 'id': id,
+      'title': title,
+      'price': price,
       'description': description,
-      'unitPrice': unitPrice,
-      'stock': stock,
-      'productType': productType,
+      'category_id': categoryId,
+      'images': images ?? [],
     };
   }
 }
