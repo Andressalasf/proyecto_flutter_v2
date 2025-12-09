@@ -33,7 +33,7 @@ class Product {
     );
   }
 
-  // Método auxiliar para convertir el precio
+  //  convertir el precio
   static double _parsePrice(dynamic price) {
     if (price == null) return 0.0;
     if (price is double) return price;
@@ -51,7 +51,7 @@ class Product {
       'title': title,
       'price': price,
       'description': description ?? 'Sin descripción',
-      'categoryId': categoryId ?? 40,
+      'category_id': categoryId ?? 40,
       'images': (images != null && images!.isNotEmpty)
           ? images
           : [

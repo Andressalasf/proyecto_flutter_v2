@@ -212,7 +212,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Título del Producto
                     TextFormField(
                       controller: _titleController,
                       decoration: const InputDecoration(
@@ -225,7 +224,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Precio
                     TextFormField(
                       controller: _priceController,
                       decoration: const InputDecoration(
@@ -246,7 +244,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Descripción (opcional)
                     TextFormField(
                       controller: _descriptionController,
                       decoration: const InputDecoration(
@@ -260,7 +257,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Categoría (Dropdown - opcional)
                     DropdownButtonFormField<int>(
                       value: _selectedCategoryId,
                       decoration: const InputDecoration(
@@ -269,11 +265,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         prefixIcon: Icon(Icons.category),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 1, child: Text("Categoría 1")),
-                        DropdownMenuItem(value: 2, child: Text("Categoría 2")),
-                        DropdownMenuItem(value: 3, child: Text("Categoría 3")),
-                        DropdownMenuItem(value: 4, child: Text("Categoría 4")),
-                        DropdownMenuItem(value: 5, child: Text("Categoría 5")),
+                        DropdownMenuItem(value: 1, child: Text("Categoría 1 (Clothes)")),
+                        DropdownMenuItem(value: 2, child: Text("Categoría 2 (Electronics)")),
+                        DropdownMenuItem(value: 3, child: Text("Categoría 3 (Furniture)")),
+                        DropdownMenuItem(value: 4, child: Text("Categoría 4 (Shoes)")),
+                        DropdownMenuItem(value: 5, child: Text("Categoría 5 (Miscellaneous)")),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -283,7 +279,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Sección de imágenes
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(15),

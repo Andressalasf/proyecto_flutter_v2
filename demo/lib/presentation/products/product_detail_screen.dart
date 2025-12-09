@@ -29,7 +29,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
 
     try {
-      // Como el API service solo tiene getProducts(), filtramos por ID
       final products = await _apiService.getProducts();
       final product = products.firstWhere(
         (p) => p.id == widget.productId,
@@ -63,9 +62,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _navigateToAddProduct() {
-    // Navega a la pestaña de agregar producto (índice 0)
-    Navigator.of(context).pop(); // Cierra el detalle
-    // El MainScreen manejará el cambio de pestaña si es necesario
+    Navigator.of(context).pop(); 
   }
 
   @override
@@ -103,7 +100,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Título y Precio
+                    // Titulo y precio
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -130,11 +127,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Carrusel de Imágenes
+                    // Carrusel de imagenes
                     ImagesWidget(images: _product!.images ?? []),
                     const SizedBox(height: 16),
 
-                    // Categoría
+                    // Categoria
                     if (_product!.categoryName != null) ...[
                       Chip(
                         label: Text(_product!.categoryName!),
@@ -147,11 +144,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Descripción
+                    // Descripcion
                     if (_product!.description != null &&
                         _product!.description!.isNotEmpty) ...[
                       const Text(
-                        'Descripción',
+                        'Descripcion',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -166,7 +163,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Información adicional
+                    // Informacion adicional
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -197,7 +194,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Botón Agregar
+                    // Boton de agregar
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(

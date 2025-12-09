@@ -46,21 +46,27 @@ class _ImagesWidgetState extends State<ImagesWidget> {
               setState(() => _currentPage = index);
             },
             itemBuilder: (context, index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  widget.images[index],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[300],
-                      child: const Icon(
-                        Icons.broken_image,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                    );
-                  },
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    widget.images[index],
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.broken_image,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               );
             },

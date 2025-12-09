@@ -1,7 +1,9 @@
 import 'package:demo/models/profile_model.dart';
 import 'package:demo/presentation/widget/layout/drawer_widget.dart';
+import 'package:demo/services/auth_service.dart';
 import 'package:demo/services/profile_service.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -131,6 +133,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       value: profile.role,
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 30),
+              // Boton del logout
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await AuthService.logout();
+                    if (mounted) {
+                      context.go('/auth');
+                    }
+                  },
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Cerrar Sesión'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
             ],

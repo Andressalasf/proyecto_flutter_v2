@@ -1,13 +1,10 @@
-import 'package:demo/helper/interceptor.dart';
 import 'package:dio/dio.dart';
 import '../models/product_model.dart';
 
 class ApiService {
-  // API pública de prueba - Platzi Fake Store API
-  // Para usar tu servidor local: 'http://localhost:3000/api/v1'
-  // Si usas emulador/dispositivo: 'http://192.168.1.4:3000/api/v1'
-  final String url = 'https://api.escuelajs.co/api/v1';
-  final Dio _dio = Dio()..interceptors.add(AuthInterceptor());
+
+  final String url = 'http://localhost:3000/api/v1';
+  final Dio _dio = Dio();
 
   // Crear un producto
   Future<String> createProduct(Product product) async {
@@ -23,7 +20,6 @@ class ApiService {
         return 'Error del servidor: ${response.statusCode}';
       }
     } on DioException catch (e) {
-      // Error de validación
       if (e.response?.statusCode == 400) {
         final responseData = e.response?.data;
         if (responseData is Map && responseData['message'] != null) {
